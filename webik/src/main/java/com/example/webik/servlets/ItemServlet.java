@@ -18,22 +18,18 @@ import java.io.IOException;
 import java.util.stream.Collectors;
 
 import static com.example.webik.service.Storage.groups;
+import static com.example.webik.service.Storage.items;
 
 @WebServlet(name = "itemServlet", value = "/item")
 public class ItemServlet extends HttpServlet {
     public static final String PARAM_TYPE = "type";
-    private Item Item;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    public static String URL_ID = "id";
+    public static String PATH_ID = "id";
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("application/json");
-        try {
-            resp.getWriter().write(objectMapper.writeValueAsString(Storage.findItemByTitle(req.getParameter("name"))));
-        } catch (ItemNotFoundException e) {
-            e.printStackTrace();
-        }
+        resp.getWriter().write(objectMapper.writeValueAsString(Storage.findAllItems()));
     }
 
 
@@ -57,10 +53,10 @@ public class ItemServlet extends HttpServlet {
 
         switch (type) {
             case STOCK:
-//                item = Storage.addItem(objectMapper.readValue(body, Stock.class), Item.getId(), groups);
+                item = Storage.addItem(objectMapper.readValue(body, Stock.class));
                 break;
             case GENERATIVE:
-//                item = Storage.addItem(objectMapper.readValue(body, Generative.class),Item.getId(), groups);
+                item = Storage.addItem(objectMapper.readValue(body, Generative.class));
                 break;
             default:
                 throw new RuntimeException("Invalid type");
@@ -77,26 +73,35 @@ public class ItemServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String urlId = req.getParameter(URL_ID);
         String path = req.getContextPath();
+        String arr[] = path.split("/");
+        String id = arr[arr.length - 1];
+        String jBody = req.getReader()
+                .lines()
+                .collect(Collectors.joining());
+        Item searchId = Storage.findItemById(id);
 
-        if (urlId == null || urlId.isEmpty()) {
-            resp.setStatus(400);
-            resp.getWriter().write("no id" + PARAM_TYPE);
-
-        } else if (path.endsWith(urlId)) {
-            try {
-                Storage.updateItem(urlId, req.getParameter("name"));
-            } catch (ItemNotFoundException e) {
-                e.printStackTrace();
-            }
+        Item item = objectMapper.readValue(jBody, Item.class);
+        if (item.getCurrency() != null) {
+            searchId.setCurrency(item.getCurrency());
         }
+        if (item.getName() != null) {
+            searchId.setName(item.getName());
+        }
+        if (item.getPrice() != 0) {
+            searchId.setPrice(item.getPrice());
+        }
+        if (item.getImageUrl() != null) {
+            searchId.setImageUrl(item.getImageUrl());
+        }
+        resp.getWriter().write(objectMapper.writeValueAsString(searchId));
+
 
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String urlId = req.getParameter(URL_ID);
+        String urlId = req.getParameter(PATH_ID);
         String path = req.getContextPath();
 
         if (urlId == null || urlId.isEmpty()) {

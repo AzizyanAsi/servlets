@@ -3,6 +3,7 @@ package com.example.webik.service;
 import com.example.webik.models.Basket;
 import com.example.webik.models.Group;
 import com.example.webik.models.Item;
+import com.sun.org.apache.bcel.internal.generic.IREM;
 
 import java.util.*;
 
@@ -10,6 +11,7 @@ public class Storage {
     private static List<Group> roots = new ArrayList<>();
     public static Basket basket = new Basket();
     public static List<Group> groups = new ArrayList<>();
+    public static List<Item> items = new ArrayList<>();
 
     public static void addToRoots(Group group) {
         roots.add(group);
@@ -41,6 +43,11 @@ public class Storage {
         return false;
     }
 
+    public static Item addItem(Item item) {
+        items.add(item);
+        return item;
+    }
+
     public static boolean addItem(Item addedItem, String id, List<Group> groups) {
         boolean isAdded = false;
         List<Group> copyGroup = new ArrayList<>(groups);
@@ -50,6 +57,7 @@ public class Storage {
             g = iterator.next();
             if (g.getId().equals(id)) {
                 g.getItems().add(addedItem);
+                basket.addToBasket(addedItem);
                 addedItem.setParentGroup(g);
                 return true;
             } else {
@@ -64,6 +72,20 @@ public class Storage {
         return groups.stream()
                 .filter(a -> a.getName().equals(name))
                 .findFirst();
+    }
+
+    public static List<Item> findAllItems() {
+        return items;
+    }
+
+    public static Item findItemById(String id) {
+        for (Item item : items) {
+            if (item.getId().equals(id)) {
+                return item;
+            }
+
+        }
+        return null;
     }
 
     public static Item findItemByTitle(String name) throws ItemNotFoundException {
@@ -98,6 +120,7 @@ public class Storage {
                 .max(Comparator.comparing(Item::calculatePrice));
 
     }
+
     public static Optional<Item> findMinPricedItem() {
         List<Item> mines = new ArrayList<>();
         for (Group group : groups) {
